@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="bn" data-theme="light">
+<head>
+<link rel="manifest" href="manifest.json">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HSC Syllabus Tracker</title>
+
+  <!-- Shows load/runtime errors on screen instead of a silent blank page -->
+  <script>
+    window.addEventListener('error', function (e) {
+      if (e.target && e.target.getAttribute && e.target.getAttribute('data-optional')) return;
+      var msg = e.target && (e.target.src || e.target.href)
+        ? 'ফাইল লোড হয়নি: ' + (e.target.src || e.target.href)
+        : 'Error: ' + e.message + (e.filename ? ' [' + e.filename.split('/').pop() + (e.lineno ? ':' + e.lineno : '') + ']' : '');
+      var box = document.getElementById('errorBanner');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'errorBanner';
+        box.className = 'error-banner';
+        box.title = 'বন্ধ করতে ট্যাপ করুন';
+        box.onclick = function () { box.remove(); };
+        (document.body || document.documentElement).appendChild(box);
+      }
+      box.textContent = msg;
+    }, true);
+  </script>
+
+  <style>
+    :root {
+      --bg-color: #f4f6f9;
+      --card-bg: #ffffff;
+      --text-primary: #1a1d20;
+      --text-secondary: #6c757d;
+      --accent-color: #00a86b;
+      --accent-soft: #e6f6f0;
+      --border-color: #e2e8f0;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      --modal-overlay: rgba(0, 0, 0, 0.55);
+    }
+
+    [data-theme="dark"] {
+      --bg-color: #121417;
+      --card-bg: #1e2227;
+      --text-primary: #f1f3f5;
+      --text-secondary: #adb5bd;
+      --accent-color: #10b981;
+      --accent-soft: #13392c;
+      --border-color: #2d333b;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      --modal-overlay: rgba(0, 0, 0, 0.75);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-primary);
+      transition: background-color 0.2s, color 0.2s;
+      padding-bottom: 40px;
+    }
+
+    /* Header & progress bar */
+    header {
+      background-color: var(--card-bg);
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow);
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 14px; }
+
+    /* Prominent, large, well-proportioned back button */
+    .back-btn {
+      background: none;
+      border: none;
+      color: var(--text-primary);
+      font-size: 34px;
+      font-weight: 800;
+      cursor: pointer;
+      display: none;
+      padding: 0 6px;
+      line-height: 0.8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .header-title { font-size: 18px; font-weight: 700; }
+
+    .theme-toggle {
+      background: var(--accent-soft);
+      color: var(--accent-color);
+      border: none;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .progress-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      padding: 6px 8px;
+      margin: -6px -8px;
+      border-radius: 10px;
+      transition: background 0.15s;
+    }
+
+    .progress-wrapper:hover { background: var(--accent-soft); }
+
+    .progress-bar-bg {
+      flex: 1;
+      height: 9px;
+      background-color: var(--border-color);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background-color: var(--accent-color);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .progress-text {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent-color);
+      min-width: 48px;
+      text-align: right;
+    }
+
+    .container { max-width: 600px; margin: 0 auto; padding: 16px; }
+
+    /* Subjects */
+    .subject-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .subject-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 16px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: transform 0.15s;
+    }
+
+    .subject-card:active { transform: scale(0.98); }
+    .subject-card.disabled { opacity: 0.55; }
+
+    .subject-card-top { display: flex; align-items: center; gap: 10px; }
+
+    .subject-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .subject-name { font-size: 14px; font-weight: 600; line-height: 1.25; }
+
+    .sub-progress-row { display: flex; align-items: center; gap: 8px; margin-top: auto; }
+
+    .sub-bar-bg {
+      flex: 1;
+      height: 5px;
+      background: var(--border-color);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .sub-bar-fill { height: 100%; border-radius: 6px; transition: width 0.3s ease; }
+
+    .sub-pct-label { font-size: 11px; font-weight: 700; color: var(--text-secondary); }
+
+    /* Papers */
+    .paper-list { display: flex; flex-direction: column; gap: 12px; }
+
+    .paper-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 22px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+
+    .paper-title { font-size: 18px; font-weight: 700; }
+
+    /* Enhanced right-corner paper arrow */
+    .paper-arrow {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    /* Chapters & topics */
+    .chapter-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .chapter-header { display: flex; align-items: center; padding: 14px 16px; gap: 12px; }
+
+    .checkbox-box {
+      width: 22px;
+      height: 22px;
+      border: 2px solid var(--text-secondary);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      color: #fff;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .checkbox-box.checked { background-color: var(--accent-color); border-color: var(--accent-color); }
+
+    .chapter-info { flex: 1; cursor: pointer; }
+
+    .chapter-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+
+    .badges-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+
+    .badge {
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-weight: 600;
+      background-color: var(--accent-soft);
+      color: var(--accent-color);
+    }
+
+    .badge.warn { background-color: #fef3c7; color: #d97706; }
+    .badge.bad { background-color: #fee2e2; color: #dc2626; }
+    .badge.muted { background-color: var(--border-color); color: var(--text-secondary); }
+
+    /* Clean V-shaped open mouth arrow for chapter dropdowns */
+    .arrow-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 20px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: scaleX(1.4) scaleY(1.1);
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-origin: center;
+    }
+
+    .arrow-btn.open { transform: scaleX(1.4) scaleY(1.1) rotate(180deg); }
+
+    .topics-container {
+      display: none;
+      border-top: 1px solid var(--border-color);
+      background-color: var(--bg-color);
+      padding: 10px 16px;
+    }
+
+    .topics-container.open { display: block; }
+
+    .topic-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-color);
+      gap: 12px;
+    }
+
+    .topic-item:last-of-type { border-bottom: none; }
+
+    .topic-info { flex: 1; cursor: pointer; }
+    .topic-name { font-size: 14px; font-weight: 500; }
+
+    /* Matching arrow for topic items */
+    .topic-arrow {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      padding-left: 6px;
+      flex-shrink: 0;
+    }
+
+    .add-subtopic-btn {
+      margin-top: 10px;
+      width: 100%;
+      padding: 8px;
+      background: var(--card-bg);
+      border: 1px dashed var(--accent-color);
+      color: var(--accent-color);
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .empty-msg { text-align: center; color: var(--text-secondary); margin-top: 30px; }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: var(--modal-overlay);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      padding: 16px;
+    }
+
+    .modal-backdrop.active { display: flex; }
+
+    .modal-card {
+      background: var(--card-bg);
+      width: 100%;
+      max-width: 400px;
+      max-height: 90vh;
+      overflow-y: auto;
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    }
+
+    .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 14px; }
+
+    .form-group { margin-bottom: 14px; }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .text-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-color);
+      color: var(--text-primary);
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .quality-options { display: flex; gap: 8px; }
+
+    .quality-btn {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-color);
+      color: var(--text-primary);
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .quality-btn.selected { background: var(--accent-color); color: #fff; border-color: var(--accent-color); }
+
+    .check-pills { display: flex; gap: 8px; }
+
+    .pill-label {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .pill-label input { accent-color: var(--accent-color); }
+
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+
+    .btn-cancel {
+      padding: 8px 14px;
+      border: none;
+      background: var(--border-color);
+      color: var(--text-primary);
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-save {
+      padding: 8px 16px;
+      border: none;
+      background: var(--accent-color);
+      color: #fff;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-reset {
+      margin-right: auto;
+      padding: 8px 12px;
+      border: 1px solid #dc2626;
+      background: none;
+      color: #dc2626;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      display: none;
+    }
+
+    .btn-reset.show { display: inline-block; }
+
+    /* Donut chart */
+    .donut-container { display: flex; flex-direction: column; align-items: center; margin: 10px 0 18px; }
+
+    .donut-ring {
+      position: relative;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: conic-gradient(var(--border-color) 0deg 360deg);
+      transition: background 0.4s ease;
+    }
+
+    .donut-hole {
+      width: 132px;
+      height: 132px;
+      border-radius: 50%;
+      background-color: var(--card-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .donut-big-num { font-size: 26px; font-weight: 800; color: var(--text-primary); }
+
+    .donut-sub-label { font-size: 11px; color: var(--text-secondary); font-weight: 600; }
+
+    .legend-list { width: 100%; display: flex; flex-direction: column; gap: 8px; max-height: 210px; overflow-y: auto; }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: var(--bg-color);
+    }
+
+    .legend-left { display: flex; align-items: center; gap: 8px; }
+    .legend-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Toast & error banner */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a1d20;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      z-index: 300;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      max-width: 90%;
+      text-align: center;
+    }
+
+    .toast.show { opacity: 1; }
+
+    .error-banner {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #dc2626;
+      color: #fff;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 999;
+      word-break: break-all;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-top">
+      <div class="header-left">
+        <button class="back-btn" id="backBtn" type="button">←</button>
+        <div class="header-title" id="headerTitle">বিষয়ভিত্তিক সিলেবাস</div>
+      </div>
+      <button class="theme-toggle" id="themeBtn" type="button">🌙 Dark</button>
+    </div>
+    <div class="progress-wrapper" id="progressWrapper" title="বিস্তারিত চার্ট দেখতে ট্যাপ করুন">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressBarFill"></div>
+      </div>
+      <div class="progress-text" id="progressText">0% ▾</div>
+    </div>
+  </header>
+
+  <div class="container" id="appContainer"></div>
+
+  <!-- Completion details modal -->
+  <div class="modal-backdrop" id="detailModal">
+    <div class="modal-card">
+      <div class="modal-title" id="modalItemTitle">অধ্যায় / টপিক আপডেট</div>
+
+      <div class="form-group">
+        <label class="form-label">প্রস্তুতির অবস্থা (How well completed?)</label>
+        <div class="quality-options">
+          <button type="button" class="quality-btn" data-val="Good">Good</button>
+          <button type="button" class="quality-btn" data-val="Average">Average</button>
+          <button type="button" class="quality-btn" data-val="Bad">Bad</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">যা যা শেষ হয়েছে (Completed Tasks)</label>
+        <div class="check-pills">
+          <label class="pill-label"><input type="checkbox" id="chkBook"> Book</label>
+          <label class="pill-label"><input type="checkbox" id="chkMCQ"> MCQ</label>
+          <label class="pill-label"><input type="checkbox" id="chkCQ"> CQ</label>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-reset" id="resetBtn">রিসেট</button>
+        <button type="button" class="btn-cancel" id="cancelDetailBtn">বাতিল</button>
+        <button type="button" class="btn-save" id="saveDetailBtn">সেভ করুন</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add sub-topic modal -->
+  <div class="modal-backdrop" id="addModal">
+    <div class="modal-card">
+      <div class="modal-title">নতুন সাব-টপিক যোগ করুন</div>
+      <div class="form-group">
+        <input type="text" class="text-input" id="addInput" placeholder="সাব-টপিক বা অংশের নাম লিখুন" maxlength="120">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" id="cancelAddBtn">বাতিল</button>
+        <button type="button" class="btn-save" id="confirmAddBtn">যোগ করুন</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress chart modal -->
+  <div class="modal-backdrop" id="statsModal">
+    <div class="modal-card">
+      <div class="modal-title" style="text-align:center;">সামগ্রিক সিলেবাস অগ্রগতি</div>
+
+      <div class="donut-container">
+        <div class="donut-ring" id="donutRing">
+          <div class="donut-hole">
+            <div class="donut-big-num" id="donutTotalPct">0%</div>
+            <div class="donut-sub-label">সম্পন্ন হয়েছে</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="legend-list" id="statsLegend"></div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-save" style="width:100%;" id="closeStatsBtn">বন্ধ করুন</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Load order: data first, then storage logic, then the app.
+       Other subject files (chemistry.js, math.js ...) are loaded by the app itself below. -->
+  <script src="physics.js"></script>
+  <script src="storage.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      if (typeof SyllabusManager === 'undefined') {
+        throw new Error('storage.js লোড হয়নি — ফাইলের নাম ও ফোল্ডার মিলিয়ে দেখুন।');
+      }
+
+      var manager = new SyllabusManager();
+
+      // files   = .js file(s) to load for that subject (same folder as index.html)
+      // aliases = other names your data variable might use, e.g. window.higherMathData
+      var subjects = [
+        { id: 'physics',   name: 'পদার্থবিজ্ঞান',            icon: '🧲', color: '#10b981', files: ['physics.js'],   aliases: [] },
+        { id: 'chemistry', name: 'রসায়ন',                    icon: '🧪', color: '#f59e0b', files: ['chemistry.js'], aliases: [] },
+        { id: 'math',      name: 'উচ্চতর গণিত',              icon: '📐', color: '#3b82f6', files: ['math.js', 'highmath.js', 'higherMath.js', 'highermath.js'], aliases: ['higherMath', 'highermath', 'higher_math', 'highMath', 'hmath'] },
+        { id: 'biology',   name: 'জীববিজ্ঞান',               icon: '🧬', color: '#ec4899', files: ['biology.js'],   aliases: [] },
+        { id: 'ict',       name: 'তথ্য ও যোগাযোগ প্রযুক্তি',   icon: '💻', color: '#8b5cf6', files: ['ict.js'],       aliases: [] },
+        { id: 'bangla',    name: 'বাংলা',                    icon: 'অ',  color: '#ef4444', files: ['bangla.js'],    aliases: [] },
+        { id: 'english',   name: 'English',                  icon: 'Aa', color: '#06b6d4', files: ['english.js'],   aliases: [] }
+      ];
+
+      var state = {
+        view: 'subjects',
+        subject: null,
+        paper: null,
+        openChapters: {},
+        modal: null,
+        quality: 'Good',
+        addChapter: null
+      };
+
+      var $ = function (id) { return document.getElementById(id); };
+
+      function esc(s) {
+        return String(s).replace(/[&<>"']/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+      }
+
+      function toast(msg) {
+        var t = $('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(toast._timer);
+        toast._timer = setTimeout(function () { t.classList.remove('show'); }, 3200);
+      }
+
+      var ORD_BN = ['১ম', '২য়', '৩য়', '৪র্থ', '৫ম', '৬ষ্ঠ'];
+      function ordBn(n) { return ORD_BN[n - 1] || (n + 'ম'); }
+      function ordEn(n) { return n + (n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'); }
+
+      function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        $('themeBtn').textContent = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
+      }
+
+      function toggleTheme() {
+        var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+        try { manager.storage.set('hsc_theme', next); } catch (e) { /* ignore */ }
+      }
+
+      function currentChapters() {
+        return manager.getChapters(state.subject.id, state.paper);
+      }
+
+      function findChapter(id) {
+        return currentChapters().filter(function (c) { return c.id === id; })[0] || null;
+      }
+
+      function renderBadges(meta) {
+        if (!meta || !meta.completed) return '';
+        var html = '';
+        if (meta.quality) {
+          var cls = meta.quality === 'Good' ? '' : (meta.quality === 'Average' ? 'warn' : 'bad');
+          html += '<span class="badge ' + cls + '">' + esc(meta.quality) + '</span>';
+        }
+        if (meta.book) html += '<span class="badge">Book</span>';
+        if (meta.mcq) html += '<span class="badge">MCQ</span>';
+        if (meta.cq) html += '<span class="badge">CQ</span>';
+        return html;
+      }
+
+      function updateOverallProgress() {
+        var o = manager.getOverallStats(subjects.map(function (s) { return s.id; }));
+        $('progressBarFill').style.width = o.pct + '%';
+        $('progressText').textContent = o.pct + '% ▾';
+      }
+
+      function renderSubjects() {
+        state.view = 'subjects';
+        $('backBtn').style.display = 'none';
+        $('headerTitle').textContent = 'বিষয়ভিত্তিক সিলেবাস';
+
+        $('appContainer').innerHTML = '<div class="subject-grid">' + subjects.map(function (sub) {
+          var st = manager.getSubjectStats(sub.id);
+          var label = st.hasData ? st.pct + '%' : 'শীঘ্রই';
+          return '' +
+            '<div class="subject-card ' + (st.hasData ? '' : 'disabled') + '" data-action="subject" data-id="' + esc(sub.id) + '">' +
+              '<div class="subject-card-top">' +
+                '<div class="subject-icon" style="background:' + sub.color + '20; color:' + sub.color + ';">' + sub.icon + '</div>' +
+                '<div class="subject-name">' + esc(sub.name) + '</div>' +
+              '</div>' +
+              '<div class="sub-progress-row">' +
+                '<div class="sub-bar-bg"><div class="sub-bar-fill" style="width:' + st.pct + '%; background:' + sub.color + ';"></div></div>' +
+                '<div class="sub-pct-label">' + label + '</div>' +
+              '</div>' +
+            '</div>';
+        }).join('') + '</div>';
+
+        updateOverallProgress();
+        window.scrollTo(0, 0);
+      }
+
+      function openSubject(subId) {
+        var sub = subjects.filter(function (s) { return s.id === subId; })[0];
+        if (!sub) return;
+        if (!manager.hasSubject(subId)) {
+          toast(sub.name + ' এর ডেটা পাওয়া যায়নি — ' + sub.files[0] + ' ফাইলটি index.html এর সাথে একই ফোল্ডারে আছে কি দেখুন।');
+          return;
+        }
+        state.subject = sub;
+        renderPapers();
+      }
+
+      function renderPapers() {
+        state.view = 'papers';
+        $('backBtn').style.display = 'flex';
+        $('headerTitle').textContent = state.subject.name;
+
+        var papers = manager.getSubject(state.subject.id).papers;
+        $('appContainer').innerHTML = '<div class="paper-list">' + papers.map(function (p, i) {
+          var n = i + 1;
+          return '<div class="paper-card" data-action="paper" data-paper="' + n + '">' +
+                   '<div class="paper-title">' + ordBn(n) + ' পত্র (' + ordEn(n) + ' Paper)</div>' +
+                   '<div class="paper-arrow">›</div>' +
+                 '</div>';
+        }).join('') + '</div>';
+
+        updateOverallProgress();
+        window.scrollTo(0, 0);
+      }
+
+      function openPaper(num) {
+        state.paper = num;
+        state.view = 'chapters';
+        renderChapters();
+        window.scrollTo(0, 0);
+      }
+
+      function renderChapters() {
+        $('backBtn').style.display = 'flex';
+        $('headerTitle').textContent = state.subject.name + ' - ' + ordBn(state.paper) + ' পত্র';
+
+        var chapters = currentChapters();
+        if (chapters.length === 0) {
+          $('appContainer').innerHTML = '<p class="empty-msg">এই পত্রে কোনো অধ্যায় পাওয়া যায়নি।</p>';
+          updateOverallProgress();
+          return;
+        }
+
+        $('appContainer').innerHTML = chapters.map(function (chap) {
+          // Topics are already broken down (comma-separated parts) by storage.js,
+          // so the list shown here always matches what progress is counted from.
+          var topics = manager.getTopics(chap);
+
+          var done = manager.isChapterDone(chap);
+          var isOpen = !!state.openChapters[chap.id];
+          var cid = esc(chap.id);
+
+          var counter = topics.length
+            ? '<span class="badge muted">' + manager.countDoneTopics(chap) + '/' + topics.length + ' টপিক</span>'
+            : '';
+
+          var topicsHtml = topics.map(function (t) {
+            var tDone = manager.isDone(t.id);
+            var attrs = 'data-action="edit" data-kind="topic" data-chapter="' + cid + '" data-topic="' + esc(t.id) + '"';
+            return '' +
+              '<div class="topic-item">' +
+                '<div class="checkbox-box ' + (tDone ? 'checked' : '') + '" ' + attrs + '>' + (tDone ? '✓' : '') + '</div>' +
+                '<div class="topic-info" ' + attrs + '>' +
+                  '<div class="topic-name">' + esc(t.title) + '</div>' +
+                  '<div class="badges-row">' + renderBadges(manager.getItem(t.id)) + '</div>' +
+                '</div>' +
+                '<div class="topic-arrow">›</div>' +
+              '</div>';
+          }).join('');
+
+          var chapAttrs = 'data-action="edit" data-kind="chapter" data-chapter="' + cid + '"';
+
+          return '' +
+            '<div class="chapter-card">' +
+              '<div class="chapter-header">' +
+                '<div class="checkbox-box ' + (done ? 'checked' : '') + '" ' + chapAttrs + '>' + (done ? '✓' : '') + '</div>' +
+                '<div class="chapter-info" ' + chapAttrs + '>' +
+                  '<div class="chapter-title">' + esc(chap.title || chap.id) + '</div>' +
+                  '<div class="badges-row">' + counter + (done ? renderBadges(manager.getItem(chap.id)) : '') + '</div>' +
+                '</div>' +
+                '<button type="button" class="arrow-btn ' + (isOpen ? 'open' : '') + '" data-action="toggle" data-chapter="' + cid + '" data-arrow="' + cid + '">⌄</button>' +
+              '</div>' +
+              '<div class="topics-container ' + (isOpen ? 'open' : '') + '" data-drawer="' + cid + '">' +
+                topicsHtml +
+                '<button type="button" class="add-subtopic-btn" data-action="add" data-chapter="' + cid + '">+ নতুন সাব-টপিক যোগ করুন (Break down)</button>' +
+              '</div>' +
+            '</div>';
+        }).join('');
+
+        updateOverallProgress();
+      }
+
+      function toggleChapter(chapId) {
+        var sel = CSS.escape(chapId);
+        var drawer = $('appContainer').querySelector('[data-drawer="' + sel + '"]');
+        var arrow = $('appContainer').querySelector('[data-arrow="' + sel + '"]');
+        if (!drawer || !arrow) return;
+        var open = drawer.classList.toggle('open');
+        arrow.classList.toggle('open', open);
+        if (open) state.openChapters[chapId] = true; else delete state.openChapters[chapId];
+      }
+
+      function goBack() {
+        if (state.view === 'chapters') renderPapers();
+        else if (state.view === 'papers') renderSubjects();
+      }
+
+      function selectQuality(val) {
+        state.quality = val;
+        var btns = document.querySelectorAll('.quality-btn');
+        for (var i = 0; i < btns.length; i++) {
+          btns[i].classList.toggle('selected', btns[i].getAttribute('data-val') === val);
+        }
+      }
+
+      function openDetailModal(kind, chapterId, topicId) {
+        var chap = findChapter(chapterId);
+        if (!chap) return;
+
+        var id, title;
+        if (kind === 'chapter') {
+          id = chap.id;
+          title = chap.title || chap.id;
+        } else {
+          var t = manager.getTopics(chap).filter(function (x) { return x.id === topicId; })[0];
+          if (!t) return;
+          id = t.id;
+          title = t.title;
+        }
+
+        state.modal = { kind: kind, chapter: chap, id: id };
+        var existing = manager.getItem(id) || {};
+
+        $('modalItemTitle').textContent = title;
+        selectQuality(existing.quality || 'Good');
+        $('chkBook').checked = !!existing.book;
+        $('chkMCQ').checked = !!existing.mcq;
+        $('chkCQ').checked = !!existing.cq;
+
+        var canReset = kind === 'chapter' ? (manager.isChapterDone(chap) || !!existing.completed) : !!existing.completed;
+        $('resetBtn').classList.toggle('show', canReset);
+        $('resetBtn').textContent = kind === 'chapter' ? 'সব রিসেট' : 'রিসেট';
+
+        $('detailModal').classList.add('active');
+      }
+
+      function closeDetailModal() {
+        $('detailModal').classList.remove('active');
+        state.modal = null;
+      }
+
+      function saveDetailModal() {
+        var m = state.modal;
+        if (!m) return;
+        var details = {
+          quality: state.quality,
+          book: $('chkBook').checked,
+          mcq: $('chkMCQ').checked,
+          cq: $('chkCQ').checked
+        };
+        if (m.kind === 'chapter') manager.setChapter(m.chapter, details);
+        else manager.setItem(m.id, details);
+        closeDetailModal();
+        renderChapters();
+      }
+
+      function resetDetailModal() {
+        var m = state.modal;
+        if (!m) return;
+        if (m.kind === 'chapter') manager.resetChapter(m.chapter);
+        else manager.clearItem(m.id);
+        closeDetailModal();
+        renderChapters();
+      }
+
+      function openAddModal(chapterId) {
+        var chap = findChapter(chapterId);
+        if (!chap) return;
+        state.addChapter = chap;
+        $('addInput').value = '';
+        $('addModal').classList.add('active');
+        setTimeout(function () { $('addInput').focus(); }, 50);
+      }
+
+      function closeAddModal() {
+        $('addModal').classList.remove('active');
+        state.addChapter = null;
+      }
+
+      function confirmAdd() {
+        var name = $('addInput').value.trim();
+        if (!name || !state.addChapter) return;
+        var chap = state.addChapter;
+        manager.addCustomTopic(chap, name);
+        state.openChapters[chap.id] = true;
+        closeAddModal();
+        renderChapters();
+      }
+
+      function openStatsModal() {
+        var totalCompleted = 0;
+        var totalItems = 0;
+        var stats = subjects.map(function (sub) {
+          var st = manager.getSubjectStats(sub.id);
+          if (st.hasData) { totalCompleted += st.completed; totalItems += st.total; }
+          return { sub: sub, st: st };
+        });
+
+        var overallPct = totalItems > 0 ? Math.round((totalCompleted / totalItems) * 100) : 0;
+        $('donutTotalPct').textContent = overallPct + '%';
+
+        var stops = [];
+        var deg = 0;
+        stats.forEach(function (x) {
+          if (x.st.hasData && x.st.completed > 0 && totalItems > 0) {
+            var slice = (x.st.completed / totalItems) * 360;
+            stops.push(x.sub.color + ' ' + deg + 'deg ' + (deg + slice) + 'deg');
+            deg += slice;
+          }
+        });
+        stops.push('var(--border-color) ' + deg + 'deg 360deg');
+        $('donutRing').style.background = 'conic-gradient(' + stops.join(', ') + ')';
+
+        $('statsLegend').innerHTML = stats.map(function (x) {
+          var right = x.st.hasData
+            ? '<strong>' + x.st.pct + '% (' + x.st.completed + '/' + x.st.total + ')</strong>'
+            : '<span style="color:var(--text-secondary);">শীঘ্রই</span>';
+          return '' +
+            '<div class="legend-item">' +
+              '<div class="legend-left"><span class="legend-dot" style="background:' + x.sub.color + ';"></span><span>' + esc(x.sub.name) + '</span></div>' +
+              right +
+            '</div>';
+        }).join('');
+
+        $('statsModal').classList.add('active');
+      }
+
+      function closeStatsModal() {
+        $('statsModal').classList.remove('active');
+      }
+
+      /* ---------- loading the other subject files ---------- */
+      function isIdent(n) { return /^[A-Za-z_$][\w$]*$/.test(n); }
+
+      // Finds a subject's data however the file exposed it:
+      //   window.SYLLABUS_DATA.<id>,  window.<id>Data,  window.<alias>Data,  or a plain const/var.
+      function adoptData(sub) {
+        if (manager.hasSubject(sub.id)) return true;
+        window.SYLLABUS_DATA = window.SYLLABUS_DATA || {};
+        var names = [sub.id].concat(sub.aliases || []);
+        var i, k, n, v;
+
+        for (i = 0; i < names.length; i++) {
+          if (window.SYLLABUS_DATA[names[i]]) { window.SYLLABUS_DATA[sub.id] = window.SYLLABUS_DATA[names[i]]; return true; }
+        }
+        for (i = 0; i < names.length; i++) {
+          var cands = [names[i] + 'Data', names[i]];
+          for (k = 0; k < cands.length; k++) {
+            v = window[cands[k]];
+            if (v && typeof v === 'object') { window.SYLLABUS_DATA[sub.id] = v; return true; }
+          }
+        }
+        for (i = 0; i < names.length; i++) {            // plain `const xData = {...}` (not on window)
+          var cands2 = [names[i] + 'Data'];
+          for (k = 0; k < cands2.length; k++) {
+            n = cands2[k];
+            if (!isIdent(n)) continue;
+            try { v = (new Function('return typeof ' + n + ' !== "undefined" ? ' + n + ' : null;'))(); } catch (e) { v = null; }
+            if (v && typeof v === 'object') { window.SYLLABUS_DATA[sub.id] = v; return true; }
+          }
+        }
+        return false;
+      }
+
+      function loadSubject(sub) {
+        if (adoptData(sub)) return;
+        var list = sub.files || [];
+        (function tryNext(i) {
+          if (i >= list.length) return;
+          var s = document.createElement('script');
+          s.src = list[i];
+          s.setAttribute('data-optional', '1');
+          s.onload = function () {
+            if (adoptData(sub)) {
+              if (state.view === 'subjects') renderSubjects();
+            } else {
+              toast(list[i] + ' লোড হয়েছে কিন্তু ডেটা চেনা যায়নি — ফাইলের শুরুতে window.' + sub.id + 'Data = { ... } আছে কি দেখুন।');
+            }
+          };
+          s.onerror = function () { tryNext(i + 1); };   // file not there: try next name, else stay "শীঘ্রই"
+          document.head.appendChild(s);
+        })(0);
+      }
+
+      /* ---------- events ---------- */
+      $('appContainer').addEventListener('click', function (e) {
+        var el = e.target.closest('[data-action]');
+        if (!el) return;
+        var d = el.dataset;
+        switch (d.action) {
+          case 'subject': openSubject(d.id); break;
+          case 'paper':   openPaper(Number(d.paper)); break;
+          case 'toggle':  toggleChapter(d.chapter); break;
+          case 'add':     openAddModal(d.chapter); break;
+          case 'edit':    openDetailModal(d.kind, d.chapter, d.topic); break;
+        }
+      });
+
+      $('backBtn').addEventListener('click', goBack);
+      $('themeBtn').addEventListener('click', toggleTheme);
+      $('progressWrapper').addEventListener('click', openStatsModal);
+
+      var qBtns = document.querySelectorAll('.quality-btn');
+      for (var i = 0; i < qBtns.length; i++) {
+        qBtns[i].addEventListener('click', function () { selectQuality(this.getAttribute('data-val')); });
+      }
+
+      $('saveDetailBtn').addEventListener('click', saveDetailModal);
+      $('cancelDetailBtn').addEventListener('click', closeDetailModal);
+      $('resetBtn').addEventListener('click', resetDetailModal);
+      $('confirmAddBtn').addEventListener('click', confirmAdd);
+      $('cancelAddBtn').addEventListener('click', closeAddModal);
+      $('closeStatsBtn').addEventListener('click', closeStatsModal);
+      $('addInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') confirmAdd(); });
+
+      [['detailModal', closeDetailModal], ['addModal', closeAddModal], ['statsModal', closeStatsModal]].forEach(function (pair) {
+        $(pair[0]).addEventListener('click', function (e) { if (e.target === this) pair[1](); });
+      });
+
+      /* ---------- start ---------- */
+      applyTheme(manager.storage.get('hsc_theme') === 'dark' ? 'dark' : 'light');
+      subjects.forEach(adoptData);      // physics (and anything already loaded)
+      renderSubjects();
+      subjects.forEach(loadSubject);    // the rest, loaded in the background
+
+      if (!manager.storage.persistent) {
+        toast('এই প্রিভিউতে localStorage বন্ধ — পেজ রিফ্রেশ করলে অগ্রগতি মুছে যাবে।');
+      }
+    })();
+  </script>
+</body>
+</html>
